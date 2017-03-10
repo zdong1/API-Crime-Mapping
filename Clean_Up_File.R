@@ -1,6 +1,5 @@
-# STAT 554 Final Project
 #setting the working directory
-setwd("~/Desktop/R/stat_554_project")
+setwd("~/Desktop/R/SCProject")
 #setting the projection
 proj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
 ###############################
@@ -136,6 +135,8 @@ merged$auto.p <- merged$auto.n/merged$pop*1000
 merged$shop.p <- merged$shop.n/merged$pop*1000
 merged$burg.p <- merged$burg.n/merged$pop*1000
 merged$har.p <- merged$har.n/merged$pop*1000
+######################################
+
 ## Read the spatial data
 seattle <- readShapePoly("seattle.shp")
 class(seattle)
@@ -148,4 +149,5 @@ seattle$NAME10<-round(seattle$NAME10,digits = 2)
 seattle$tract<-seattle$NAME10
 head(seattle$tract)
 
+#Finally, we have the SPDF file with everything we want!
 seattle@data = data.frame(seattle@data, merged[match(seattle@data[,"tract"], merged[,"tract"]),])
