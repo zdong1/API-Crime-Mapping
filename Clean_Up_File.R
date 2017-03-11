@@ -1,9 +1,9 @@
-#setting the working directory
-setwd("~/Desktop/R/SCProject")
-#setting the projection
+# Setting the working directory
+setwd("~/Desktop/R/stat_554_project")
+# Setting the projection, for future use
 proj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-###############################
-#Loading Required packages
+########################################################################
+# Loading Required packages
 library(sp)
 library(splancs)
 library(maps)
@@ -14,9 +14,9 @@ library(geoR)
 library(dplyr)
 #Load the dataset, and transfer the census tract into the correct format
 
-#############################################################################################
+#########################################################################
 # Very Messy below:
-############################################################################################{
+#########################################################################
 robbery<-read.csv(file="sea_rob.csv",header=TRUE)
 robbery$ct<-as.numeric(as.character(robbery$Census.Tract))
 robbery$ct<-trunc(robbery$ct,digits=0)
@@ -116,17 +116,17 @@ tot<-tot[-c(114),]
 tot<-arrange(tot,tract)
 #############################################################################################
 # Finish the messy part
-############################################################################################}
-############################################### 
-#Loading the demographic data
+#############################################################################
+# Loading the demographic data
 demo <-read.csv(file="sea_demog.csv",header=TRUE)
 
-#match the crime data and demographic data by tract,calling the new dataset 'merged'
+# Match the crime data and demographic data by tract,calling the 
+# new dataset 'merged'
 merged<-merge(demo,tot,by="tract", all=TRUE)
 
 
-########################################
-#Calculating crime rates: messy
+##############################################################################
+# Messy: Calculating crime rates
 merged$hom.p <- merged$hom.n/merged$pop*1000
 merged$rob.p <- merged$rob.n/merged$pop*1000
 merged$ass.p <- merged$ass.n/merged$pop*1000
@@ -135,19 +135,21 @@ merged$auto.p <- merged$auto.n/merged$pop*1000
 merged$shop.p <- merged$shop.n/merged$pop*1000
 merged$burg.p <- merged$burg.n/merged$pop*1000
 merged$har.p <- merged$har.n/merged$pop*1000
-######################################
+merged$tot.n <- merged$hom.n+merged$rob.n+merged$ass.n+merged$pdam.n+merged$auto.n+merged$shop.n+merged$burg.n+merged$har.n
+merged$tot.p <- merged$tot.n/merged$pop*1000
+################################################################################
 
 ## Read the spatial data
 seattle <- readShapePoly("seattle.shp")
 class(seattle)
 plot(seattle)
 
-#Edit a variable ct in the seattle shapefile to let the census tract match the two digits
-#format in the crime data
+# Edit a variable ct in the seattle shapefile to let the census tract match the two digits
+# format in the crime data
 seattle$NAME10<-as.numeric(as.character(seattle$NAME10))
 seattle$NAME10<-round(seattle$NAME10,digits = 2)
 seattle$tract<-seattle$NAME10
 head(seattle$tract)
 
-#Finally, we have the SPDF file with everything we want!
+# Finally, we have the SPDF file with everything we want!
 seattle@data = data.frame(seattle@data, merged[match(seattle@data[,"tract"], merged[,"tract"]),])
