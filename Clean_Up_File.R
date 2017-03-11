@@ -114,7 +114,7 @@ tot[115,2:9]<- tot[115,2:9]+(tot[114,2:9]/2)
 tot[116,2:9]<- tot[116,2:9]+(tot[114,2:9]/2)
 tot<-tot[-c(114),]
 tot<-arrange(tot,tract)
-#############################################################################################
+#############################################################################
 # Finish the messy part
 #############################################################################
 # Loading the demographic data
@@ -125,7 +125,7 @@ demo <-read.csv(file="sea_demog.csv",header=TRUE)
 merged<-merge(demo,tot,by="tract", all=TRUE)
 
 
-##############################################################################
+#############################################################################
 # Messy: Calculating crime rates
 merged$hom.p <- merged$hom.n/merged$pop*1000
 merged$rob.p <- merged$rob.n/merged$pop*1000
@@ -137,7 +137,7 @@ merged$burg.p <- merged$burg.n/merged$pop*1000
 merged$har.p <- merged$har.n/merged$pop*1000
 merged$tot.n <- merged$hom.n+merged$rob.n+merged$ass.n+merged$pdam.n+merged$auto.n+merged$shop.n+merged$burg.n+merged$har.n
 merged$tot.p <- merged$tot.n/merged$pop*1000
-################################################################################
+#############################################################################
 
 ## Read the spatial data
 seattle <- readShapePoly("seattle.shp")
