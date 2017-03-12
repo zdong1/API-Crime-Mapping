@@ -78,7 +78,7 @@ EBlower1 <- qgamma(0.025,apost1,bpost1)
 EBupper1 <- qgamma(0.975,apost1,bpost1)
 EBwidth1 <- EBupper1-EBlower1
 
-#Comparison of Interval: EB is generally better
+# Comparison of Interval: EB is generally better
 par(mfrow = c(1, 3))
 plot(EBlower1 ~ SMRlower1, col = "orange")
 abline(0, 1, col = "blue")
@@ -88,4 +88,84 @@ plot(EBwidth1 ~ SMRwidth1, col = "orange")
 abline(0, 1, col = "blue")
 
 # Very Obvious that EB incurs smaller interval
-#######################
+####################################################################
+ebresultsX <- eBayes(Y1,E1,pov)
+ebresultsX$alpha 
+ebresults$alpha
+# note the reduction in excess-Poisson variation
+# compared to the no covariate model
+ebresultsX$beta
+ebresultsX <- eBayes(Y1,E1,pov)
+par(mfrow=c(1,1))
+plot(pov,smr1,type="n")
+text(pov,smr1)
+xval <- seq(0,max(pov),.01)
+lines(xval,exp(ebresultsX$beta[1]+ebresultsX$beta[2]*xval))
+
+ebresultsX <- eBayes(Y1,E1,pov)
+par(mfrow=c(1,1))
+plot(pov,smr1,type="n",xlab="Proportion under Poverty",ylab="SMR Robbery")
+text(pov,smr1,col="pink",cex=.4)
+xval <- seq(0,max(pov),.01)
+lines(xval,exp(ebresultsX$beta[1]+ebresultsX$beta[2]*xval),col="orange")
+
+# 0.47/0.27 with pov, means variability explained by the covariance.
+
+x0 <- rep(0,length(Y1))
+x1 <- rep(1,length(Y1))
+x2 <- rep(2,length(Y1))
+plot(x0,smr1,xlim=c(0,2),type="n",
+     ylab="Relative risks",
+     xlab="",axes=F)
+axis(2)
+axis(1,at=c(0,1,2))
+text(x0,smr1,cex=.5)
+text(x1,ebresults$RR,cex=.5)
+text(x2,ebresultsX$RR,cex=.5)
+for (i in 1:length(Y1)){
+  lines(c(0,1,2),c(smr1[i],ebresults$RR[i],ebresultsX$RR[i]),
+        lty=2,col="grey")}; abline(1,0,col="red")
+
+# Lognormal Model
+# We now consider an alternative lognormal model for the relative risks, 
+# but still independent. We specify the 5\% and 
+# 95\% points of the relative risk associated with $\beta$ as  1 and 5.
+
+
+lnprior <- LogNormalPriorCh(1,5,0.5,0.95)
+lnprior
+plot(seq(0,7,.1),dlnorm(seq(0,7,.1),meanlog=lnprior$mu,sdlog=lnprior$sigma),
+     type="l",xlab=expression(theta),ylab="LogNormal Density")
+
+library(INLA)
+library(rgdal)
+library(RColorBrewer)
+
+spplot(seattle, c("smr1"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "Blues")))
+spplot(seattle, c("smr2"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "PuRd")))
+spplot(seattle, c("smr3"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "Purples")))
+spplot(seattle, c("smr4"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "Oranges")))
+spplot(seattle, c("smr5"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "PuBuGn")))
+spplot(seattle, c("smr6"),at=c(0, 0.25, 0.5, 1, 2, 4, 7, 12, 20),
+       col.regions=(brewer.pal(8, "GnBu")))
+
+sea.fit1 <- inla(Y1 ~ 1 + f(tract, model ="iid", param=c(1,0.026)), 
+                 data=merged, family="poisson", E=E1, 
+                 control.predictor=list(compute=T)) 
+summary(sea.fit1)
+plot(sea.fit1, plot.hyperparameter=FALSE, 
+     plot.random.effects=TRUE, plot.fixed.effects=FALSE, prefix="logmodplot1", postscript=T)
+sea.fit1$summary.fixed
+
+# Comparison of lognormal and gamma models
+# First illustrate how to extract the intercept
+# (beta0)
+lnorminter1 <- sea.fit1$summary.fixed[4]
+# Now extract the medians of the random effects
+# (which are centered around alpha)
+lnormREs1 <- exp(sea.fit1$summary.random$Region[5])
