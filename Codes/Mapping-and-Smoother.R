@@ -1,6 +1,3 @@
-####################################################################
-# Part 3: Clustering and Smoothing
-####################################################################
 se1 <- sqrt(Y1/E1)
 plot(Y1 ~ se1, xlab = "Standard Error", ylab = "Observed Robbery Rate",
      col = "blue", cex = 0.7, pch = 5, ylim=c(0,100))
@@ -168,4 +165,122 @@ sea.fit1$summary.fixed
 lnorminter1 <- sea.fit1$summary.fixed[4]
 # Now extract the medians of the random effects
 # (which are centered around alpha)
-lnormREs1 <- exp(sea.fit1$summary.random$Region[5])
+lnormREs1 <- exp(sea.fit1$summary.random$tract[5])
+
+lnormRRs1 <- as.double(exp(lnorminter1))*lnormREs1[,1]
+plot(ebresults$RR,lnormRRs1,xlim=c(0,4.5),ylim=c(0,4.5),
+     xlab="Gamma RRs",ylab="Lognormal RRs")
+abline(0,1)
+
+
+# See the difference of smoother
+
+seattle$RRgam <- ebresults$RR
+spplot(seattle, c("RRgam"),
+       col.regions=colorRampPalette(rev(brewer.pal(8, "RdBu")))(50) )
+
+seattle$RRlnorm1 <- lnormRRs1
+spplot(seattle, c("RRlnorm1"),
+       col.regions=colorRampPalette(rev(brewer.pal(8, "RdBu")))(50) )
+
+## Uncertainty estimates of Lognormal estimates
+
+LNlower1 <- exp(sea.fit1$summary.linear.predictor["0.025quant"])
+LNupper1 <- exp(sea.fit1$summary.linear.predictor["0.975quant"])
+LNwidth1 <- LNupper1[,1]-LNlower1[,1]
+
+par(mfrow = c(1, 3))
+plot(LNlower1[, 1] ~ SMRlower1, col = "cyan")
+abline(0, 1, col = "pink")
+plot(LNupper1[, 1] ~ SMRupper1, col = "cyan")
+abline(0, 1, col = "pink")
+plot(LNwidth1 ~ SMRwidth1, col = "cyan")
+abline(0, 1, col = "pink")
+
+## Lognormal model with covariates
+merged$pov<-as.numeric(as.character(merged$pov))
+sea.fit1X <- inla(Y1 ~1+I(pov)+f(tract, model="iid", 
+                                       param=c(1,0.014)),data=merged, family="poisson",E=E1)
+summary(sea.fit1X)
+
+sea.fit1X$summary.fixed[2,]
+exp(sea.fit1X$summary.fixed[2,])
+
+sea.fit1X$summary.fixed
+
+## Lognormal spatial model with covariates
+
+## We now add spatial (ICAR) random effects to the model.
+
+## We need a graph file containing the neighbors.
+nb2INLA("seasss.graph",sea.nb)
+
+
+## For INLA, the region unique identifier must be INTEGER. So, we have to
+## to temporarily create an identifier variable here.
+merged$region <- c(1:132)
+merged$region2 <- merged$region
+sea.fit2 <- inla(Y1 ~ 1 + I(nohs) + 
+                        f(region,model="iid",param=c(1,0.014)) + 
+                        f(region2,model="besag",graph=
+                            "seasss.graph",param=c(1,0.68)),data=merged,
+                 family="poisson",E=E1,control.predictor=list(compute=TRUE))
+summary(sea.fit2)
+
+REsnonspat1 <- exp(sea.fit2$summary.random$region[5])
+REsspat1 <- exp(sea.fit2$summary.random$region2[5])
+seattle$REsnonspat <- REsnonspat1[,1]
+seattle$REsspat <- REsspat1[,1]
+spplot(seattle, c("REsnonspat"),
+       col.regions=colorRampPalette(rev(brewer.pal(8, "RdBu")))(50) )
+
+
+## Lognormal spatial model with covariates: non-spatial random effects
+
+
+spplot(seattle, c("REsnonspat"),
+       col.regions=colorRampPalette(rev(brewer.pal(8, "RdBu")))(50) )
+
+
+## Lognormal spatial model with covariates: spatial random effects
+spplot(seattle, c("REsspat"),
+       col.regions=colorRampPalette(rev(brewer.pal(8, "RdBu")))(50) )
+
+
+## Comparison of spatial lognormal and gamma fits: some differences
+plot(ebresults$RR,sea.fit2$summary.fitted.values[,4],
+     xlab="Gamma fitted",ylab="Spatial fitted")
+abline(0,1)
+
+
+## Proportion of Variation that is Spatial
+
+mat.marg <- matrix(NA, nrow = 132, ncol = 1000)
+m <- sea.fit2$marginals.random$region2
+for (i in 1:132) {
+  Sre <- m[[i]]
+  mat.marg[i, ] <- inla.rmarginal(1000, Sre)
+}
+var.Sre <- apply(mat.marg, 2, var)
+var.eps <- inla.rmarginal(1000, inla.tmarginal(function(x) 1/x
+                                               ,sea.fit2$marginals.hyper$"Precision for region"))
+mean(var.Sre)
+mean(var.eps)
+perc.var.Sre <- mean(var.Sre/(var.Sre + var.eps))
+perc.var.Sre
+
+## Uncertainty estimates of spatial estimates
+
+LN2lower <- exp(sea.fit2$summary.linear.predictor["0.025quant"])
+LN2upper <- exp(sea.fit2$summary.linear.predictor["0.975quant"])
+LN2width <- LN2upper[,1]-LN2lower[,1]
+
+
+par(mfrow=c(1,3))
+plot(LN2lower[,1]~SMRlower1,col="green")
+abline(0,1,col="blue")
+plot(LN2upper[,1]~SMRupper1,col="green")
+abline(0,1,col="blue")
+plot(LN2width~SMRwidth1,col="green")
+abline(0,1,col="blue")
+
